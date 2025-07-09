@@ -26,3 +26,4 @@ This file tracks the project's current status, including recent changes, current
 
 * [2025-07-09 22:40:41] - **Fixed Bug:** Corrected the logic in `MainWindow.xaml.cs` to ensure `ViewModel.RoiRect` is updated on `MouseUp`, triggering the image analysis.
 * [2025-07-09 22:40:41] - **Visual Adjustment:** Changed the ROI rectangle's fill to `Transparent` in `MainWindow.xaml` as per user request.
+- **2025-07-09 22:46:57**: The project is now under Git version control. The `main` branch has been pushed to the remote repository at `https://github.com/harjeb/ImageAnalysisTool.git`.

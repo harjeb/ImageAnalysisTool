@@ -1,6 +1,7 @@
 #include "../include/ImageProcessor.h"
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
+#include <iostream>
 
 // Define IMAGEPROCESSOR_EXPORTS when building the DLL
 // This should typically be done in the project settings
@@ -21,6 +22,11 @@ extern "C" {
         int roiHeight
     ) {
         try {
+            std::cout << "ProcessImage_Canny called with:" << std::endl;
+            std::cout << "  Image size: " << width << "x" << height << std::endl;
+            std::cout << "  ROI: (" << roiX << ", " << roiY << ", " << roiWidth << ", " << roiHeight << ")" << std::endl;
+            std::cout << "  Thresholds: " << threshold1 << ", " << threshold2 << ", " << grayscaleThreshold << std::endl;
+
             // 1. Wrap the full input data in a cv::Mat
             cv::Mat fullImage(height, width, CV_8UC4, inputImageData);
 
@@ -31,9 +37,11 @@ extern "C" {
             roiRect &= cv::Rect(0, 0, width, height);
 
             if (roiRect.width <= 0 || roiRect.height <= 0) {
-                // ROI is completely outside the image, return an error or handle as needed
+                std::cout << "ERROR: Invalid ROI after bounds checking: " << roiRect.width << "x" << roiRect.height << std::endl;
                 return -2; // Indicate invalid ROI
             }
+
+            std::cout << "  Final ROI after bounds checking: (" << roiRect.x << ", " << roiRect.y << ", " << roiRect.width << ", " << roiRect.height << ")" << std::endl;
 
             // 3. Extract the ROI from the full image
             cv::Mat roiImage = fullImage(roiRect);
@@ -52,12 +60,25 @@ extern "C" {
 
             // 7. Copy the result to the output buffer.
             // The output buffer is expected to be the size of the ROI.
-            memcpy(outputImageData, cannyEdges.data, cannyEdges.total() * cannyEdges.elemSize());
+            size_t dataSize = cannyEdges.total() * cannyEdges.elemSize();
+            std::cout << "  Copying " << dataSize << " bytes to output buffer" << std::endl;
+            std::cout << "  Canny result size: " << cannyEdges.cols << "x" << cannyEdges.rows << std::endl;
 
+            memcpy(outputImageData, cannyEdges.data, dataSize);
+
+            std::cout << "ProcessImage_Canny completed successfully" << std::endl;
             return 0; // Success
         }
         catch (const cv::Exception& e) {
-            // In case of an OpenCV error, return a non-zero value to indicate failure.
+            std::cout << "OpenCV exception: " << e.what() << std::endl;
+            return -1;
+        }
+        catch (const std::exception& e) {
+            std::cout << "Standard exception: " << e.what() << std::endl;
+            return -1;
+        }
+        catch (...) {
+            std::cout << "Unknown exception occurred" << std::endl;
             return -1;
         }
     }

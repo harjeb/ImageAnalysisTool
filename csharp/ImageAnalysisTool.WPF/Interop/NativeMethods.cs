@@ -9,11 +9,9 @@ namespace ImageAnalysisTool.WPF.Interop
         [DllImport(DllPath, CallingConvention = CallingConvention.Cdecl)]
         internal static extern int ProcessImage_Canny(
             byte[] inputImageData,
+            byte[] outputImageData,
             int width,
             int height,
-            byte[] outputImageData,
-            out int outputWidth,
-            out int outputHeight,
             double threshold1,
             double threshold2,
             int grayscaleThreshold,

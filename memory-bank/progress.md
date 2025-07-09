@@ -25,3 +25,4 @@ This file tracks the project's progress using a task list format.
 - [DONE] 2025-07-09 22:03:43 - Finished creating README.md.
 
 * [2025-07-09 22:40:52] - **Completed Hotfix:** Fixed a critical bug preventing real-time analysis after ROI adjustment and changed the ROI fill to transparent.
+- [x] 2025-07-09 22:44:22 - Initialized Git repository and pushed to remote `https://github.com/harjeb/ImageAnalysisTool.git`.

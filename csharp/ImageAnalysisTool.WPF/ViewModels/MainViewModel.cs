@@ -1,8 +1,10 @@
 using System;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using ImageAnalysisTool.WPF.Interop;
 using Microsoft.Win32;
 
@@ -10,6 +12,7 @@ namespace ImageAnalysisTool.WPF.ViewModels
 {
     public class MainViewModel : ViewModelBase
     {
+        private DispatcherTimer? _updateTimer;
         private BitmapSource? _originalImage;
         public BitmapSource? OriginalImage
         {
@@ -18,6 +21,8 @@ namespace ImageAnalysisTool.WPF.ViewModels
             {
                 if (SetField(ref _originalImage, value))
                 {
+                    // Immediately update when image changes
+                    _updateTimer?.Stop();
                     UpdateProcessedImage();
                 }
             }
@@ -38,7 +43,7 @@ namespace ImageAnalysisTool.WPF.ViewModels
             {
                 if (SetField(ref _threshold1, value))
                 {
-                    UpdateProcessedImage();
+                    ScheduleUpdateProcessedImage();
                 }
             }
         }
@@ -51,7 +56,7 @@ namespace ImageAnalysisTool.WPF.ViewModels
             {
                 if (SetField(ref _threshold2, value))
                 {
-                    UpdateProcessedImage();
+                    ScheduleUpdateProcessedImage();
                 }
             }
         }
@@ -64,7 +69,7 @@ namespace ImageAnalysisTool.WPF.ViewModels
             {
                 if (SetField(ref _grayscaleThreshold, value))
                 {
-                    UpdateProcessedImage();
+                    ScheduleUpdateProcessedImage();
                 }
             }
         }
@@ -78,7 +83,7 @@ namespace ImageAnalysisTool.WPF.ViewModels
                 if (_roiRect == value) return;
                 _roiRect = value;
                 OnPropertyChanged();
-                UpdateProcessedImage();
+                ScheduleUpdateProcessedImage();
             }
         }
 
@@ -128,10 +133,43 @@ namespace ImageAnalysisTool.WPF.ViewModels
             }
         }
 
+        private void ScheduleUpdateProcessedImage()
+        {
+            // Cancel any existing timer
+            _updateTimer?.Stop();
+
+            // Create a new timer with a short delay to debounce rapid updates
+            _updateTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(100) // 100ms delay
+            };
+            _updateTimer.Tick += (sender, e) =>
+            {
+                _updateTimer.Stop();
+                UpdateProcessedImage();
+            };
+            _updateTimer.Start();
+        }
+
         private void UpdateProcessedImage()
         {
+            System.Diagnostics.Debug.WriteLine($"UpdateProcessedImage called");
+            System.Diagnostics.Debug.WriteLine($"OriginalImage: {OriginalImage != null}");
+            System.Diagnostics.Debug.WriteLine($"RoiRect: {RoiRect}");
+
             if (OriginalImage == null || RoiRect.Width <= 0 || RoiRect.Height <= 0)
             {
+                System.Diagnostics.Debug.WriteLine("Skipping processing: Invalid image or ROI");
+                ProcessedImage = null;
+                return;
+            }
+
+            // Validate ROI bounds
+            if (RoiRect.X < 0 || RoiRect.Y < 0 ||
+                RoiRect.X + RoiRect.Width > OriginalImage.PixelWidth ||
+                RoiRect.Y + RoiRect.Height > OriginalImage.PixelHeight)
+            {
+                System.Diagnostics.Debug.WriteLine("Skipping processing: ROI out of bounds");
                 ProcessedImage = null;
                 return;
             }
@@ -144,30 +182,59 @@ namespace ImageAnalysisTool.WPF.ViewModels
                 byte[] inputBytes = new byte[fullHeight * fullStride];
                 OriginalImage.CopyPixels(inputBytes, fullStride, 0);
 
+                System.Diagnostics.Debug.WriteLine($"Image dimensions: {fullWidth}x{fullHeight}");
+                System.Diagnostics.Debug.WriteLine($"Input bytes length: {inputBytes.Length}");
+
                 // The output buffer size now depends on the ROI size.
-                // The C++ code will tell us the exact output dimensions.
-                int outputWidth, outputHeight;
                 byte[] outputBytes = new byte[(int)(RoiRect.Width * RoiRect.Height)];
+                int outputWidth, outputHeight;
 
                 // Call the updated C++ function with all parameters
-                NativeMethods.ProcessImage_Canny(
-                    inputBytes,
-                    fullWidth,
-                    fullHeight,
-                    outputBytes,
-                    out outputWidth,
-                    out outputHeight,
-                    Threshold1,
-                    Threshold2,
-                    GrayscaleThreshold,
-                    (int)RoiRect.X,
-                    (int)RoiRect.Y,
-                    (int)RoiRect.Width,
-                    (int)RoiRect.Height
-                );
+                System.Diagnostics.Debug.WriteLine($"Calling C++ function with parameters:");
+                System.Diagnostics.Debug.WriteLine($"  Thresholds: {Threshold1}, {Threshold2}, {GrayscaleThreshold}");
+                System.Diagnostics.Debug.WriteLine($"  ROI: ({(int)RoiRect.X}, {(int)RoiRect.Y}, {(int)RoiRect.Width}, {(int)RoiRect.Height})");
+                System.Diagnostics.Debug.WriteLine($"  Output buffer size: {outputBytes.Length}");
+
+                int result;
+                try
+                {
+                    result = NativeMethods.ProcessImage_Canny(
+                        inputBytes,
+                        outputBytes,
+                        fullWidth,
+                        fullHeight,
+                        Threshold1,
+                        Threshold2,
+                        GrayscaleThreshold,
+                        (int)RoiRect.X,
+                        (int)RoiRect.Y,
+                        (int)RoiRect.Width,
+                        (int)RoiRect.Height
+                    );
+                }
+                catch (AccessViolationException ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Access violation in C++ function: {ex.Message}");
+                    ProcessedImage = null;
+                    return;
+                }
+                catch (SEHException ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"SEH exception in C++ function: {ex.Message}");
+                    ProcessedImage = null;
+                    return;
+                }
+
+                // The C++ function should set these, but for now we'll use ROI dimensions
+                outputWidth = (int)RoiRect.Width;
+                outputHeight = (int)RoiRect.Height;
+
+                System.Diagnostics.Debug.WriteLine($"C++ function returned: {result}");
+                System.Diagnostics.Debug.WriteLine($"Output dimensions: {outputWidth}x{outputHeight}");
 
                 if (outputWidth > 0 && outputHeight > 0)
                 {
+                    System.Diagnostics.Debug.WriteLine($"Creating BitmapSource with dimensions {outputWidth}x{outputHeight}");
                     // Convert the grayscale byte array back to a BitmapSource
                     ProcessedImage = BitmapSource.Create(
                         outputWidth,
@@ -180,19 +247,23 @@ namespace ImageAnalysisTool.WPF.ViewModels
                         outputWidth // Stride for grayscale is just the width
                     );
                     ProcessedImage.Freeze(); // Freeze for performance, as it's used across threads
+                    System.Diagnostics.Debug.WriteLine("ProcessedImage created successfully");
                 }
                 else
                 {
+                    System.Diagnostics.Debug.WriteLine($"Invalid output dimensions: {outputWidth}x{outputHeight}");
                     ProcessedImage = null;
                 }
             }
-            catch (DllNotFoundException)
+            catch (DllNotFoundException ex)
             {
+                System.Diagnostics.Debug.WriteLine($"DLL not found: {ex.Message}");
                 System.Windows.MessageBox.Show("Error: ImageProcessor.dll not found.\nPlease ensure the C++ project has been built and the DLL is in the correct location.", "DLL Load Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
                 ProcessedImage = null;
             }
             catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine($"Exception in UpdateProcessedImage: {ex}");
                 System.Windows.MessageBox.Show($"An error occurred during image processing: {ex.Message}", "Processing Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
                 ProcessedImage = null;
             }

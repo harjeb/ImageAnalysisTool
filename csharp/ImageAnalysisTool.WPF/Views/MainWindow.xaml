@@ -62,8 +62,8 @@
                         <Image Source="{Binding OriginalImage}" Stretch="Fill"/>
 
                         <Rectangle x:Name="RoiRectangle"
-                                   Stroke="Green"
-                                   StrokeThickness="2"
+                                   Stroke="Orange"
+                                   StrokeThickness="3"
                                    Fill="Transparent"
                                    Canvas.Left="{Binding RoiRect.X}"
                                    Canvas.Top="{Binding RoiRect.Y}"

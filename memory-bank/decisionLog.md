@@ -74,3 +74,4 @@ The `ImageCanvas_MouseUp` event handler in `MainWindow.xaml.cs` was not updating
 
 **Details:**
 File Reference: `csharp/ImageAnalysisTool.WPF/Views/MainWindow.xaml.cs`
+- **2025-07-09 22:46:10**: Decided to initialize a Git repository for the project to enable version control. The remote repository is set to `https://github.com/harjeb/ImageAnalysisTool.git`. A standard C#/C++ `.gitignore` was created to exclude build artifacts and user-specific files.

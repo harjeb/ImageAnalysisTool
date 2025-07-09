@@ -52,6 +52,7 @@ namespace ImageAnalysisTool.WPF.Views
             width = Math.Min(viewModel.OriginalImage.PixelWidth - x, width);
             height = Math.Min(viewModel.OriginalImage.PixelHeight - y, height);
 
+            // Update ROI rect which will trigger analysis
             viewModel.RoiRect = new Rect(x, y, width, height);
             UpdateRoiAdorner(canvas, viewModel.RoiRect);
         }
@@ -124,9 +125,9 @@ namespace ImageAnalysisTool.WPF.Views
 
         protected override void OnRender(DrawingContext drawingContext)
         {
-            var renderBrush = new SolidColorBrush(Colors.Green);
+            var renderBrush = new SolidColorBrush(Colors.Orange);
             renderBrush.Freeze(); // Performance optimization
-            var renderPen = new Pen(renderBrush, 2.0);
+            var renderPen = new Pen(renderBrush, 3.0);
             renderPen.Freeze();
 
             double halfHandle = HandleSize / 2;
