@@ -1,0 +1,13 @@
+# Visual Studio
+.vs/
+*.suo
+*.user
+
+# C# / .NET
+[Bb]in/
+[Oo]bj/
+
+# C++
+[Dd]ebug/
+[Rr]elease/
+x64/

@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <Target Name="CopyNativeBinaries" AfterTargets="Build">
+    <Message Text="Copying native DLLs..." Importance="high" />
+    <Copy SourceFiles="..\..\cpp\x64\Release\ImageProcessor.dll" DestinationFolder="$(OutDir)" />
+  </Target>
+
+  <!-- The .NET SDK now automatically includes these items.
+       Removing this ItemGroup fixes the NETSDK1022 build error. -->
+
+</Project>

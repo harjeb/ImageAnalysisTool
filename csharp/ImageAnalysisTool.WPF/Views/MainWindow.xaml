@@ -1,0 +1,86 @@
+﻿<Window x:Class="ImageAnalysisTool.WPF.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ImageAnalysisTool.WPF.Views"
+        xmlns:viewModels="clr-namespace:ImageAnalysisTool.WPF.ViewModels"
+        mc:Ignorable="d"
+        Title="Image Analysis Tool" Height="600" Width="1000">
+    
+    <Window.DataContext>
+        <viewModels:MainViewModel/>
+    </Window.DataContext>
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Control Panel -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+            <Button Content="Load Image" Command="{Binding LoadImageCommand}" Width="120" Height="30" Margin="5"/>
+
+            <StackPanel Orientation="Vertical" Margin="20,0,0,0">
+                <TextBlock Text="Threshold 1"/>
+                <Slider Minimum="0" Maximum="255" Value="{Binding Threshold1, Mode=TwoWay}" Width="200"/>
+                <TextBlock Text="{Binding Threshold1, StringFormat={}{0:F0}}" HorizontalAlignment="Center"/>
+            </StackPanel>
+
+            <StackPanel Orientation="Vertical" Margin="20,0,0,0">
+                <TextBlock Text="Threshold 2"/>
+                <Slider Minimum="0" Maximum="255" Value="{Binding Threshold2, Mode=TwoWay}" Width="200"/>
+                <TextBlock Text="{Binding Threshold2, StringFormat={}{0:F0}}" HorizontalAlignment="Center"/>
+            </StackPanel>
+
+            <StackPanel Orientation="Vertical" Margin="20,0,0,0">
+                <TextBlock Text="Grayscale Threshold"/>
+                <Slider Minimum="0" Maximum="255" Value="{Binding GrayscaleThreshold, Mode=TwoWay}" Width="200"/>
+                <TextBlock Text="{Binding GrayscaleThreshold, StringFormat={}{0:F0}}" HorizontalAlignment="Center"/>
+            </StackPanel>
+
+            <Button Content="Maximize ROI" Command="{Binding MaximizeRoiCommand}" Width="120" Height="30" Margin="20,0,0,0" VerticalAlignment="Center"/>
+        </StackPanel>
+
+        <!-- Image Display -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" BorderBrush="Gray" BorderThickness="1" Margin="5">
+                <Viewbox Stretch="Uniform">
+                    <Canvas Width="{Binding OriginalImage.PixelWidth}"
+                            Height="{Binding OriginalImage.PixelHeight}"
+                            MouseDown="ImageCanvas_MouseDown"
+                            MouseMove="ImageCanvas_MouseMove"
+                            MouseUp="ImageCanvas_MouseUp"
+                            Background="Transparent">
+
+                        <Image Source="{Binding OriginalImage}" Stretch="Fill"/>
+
+                        <Rectangle x:Name="RoiRectangle"
+                                   Stroke="Green"
+                                   StrokeThickness="2"
+                                   Fill="Transparent"
+                                   Canvas.Left="{Binding RoiRect.X}"
+                                   Canvas.Top="{Binding RoiRect.Y}"
+                                   Width="{Binding RoiRect.Width}"
+                                   Height="{Binding RoiRect.Height}"/>
+                    </Canvas>
+                </Viewbox>
+            </Border>
+            <TextBlock Grid.Column="0" Text="Original Image" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="10" FontWeight="Bold"/>
+
+
+            <Border Grid.Column="1" BorderBrush="Gray" BorderThickness="1" Margin="5">
+                <Viewbox>
+                    <Image Source="{Binding ProcessedImage}" Stretch="Uniform"/>
+                </Viewbox>
+            </Border>
+            <TextBlock Grid.Column="1" Text="Processed Image" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="10" FontWeight="Bold"/>
+        </Grid>
+    </Grid>
+</Window>
